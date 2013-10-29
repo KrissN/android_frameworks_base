@@ -515,17 +515,13 @@ public class SearchManager
             return;
         }
 
-        ensureSearchDialog();
-
-        mSearchDialog.show(initialQuery, selectInitialQuery, launchActivity, appSearchData);
-    }
-
-    private void ensureSearchDialog() {
         if (mSearchDialog == null) {
             mSearchDialog = new SearchDialog(mContext, this);
             mSearchDialog.setOnCancelListener(this);
             mSearchDialog.setOnDismissListener(this);
         }
+
+        mSearchDialog.show(initialQuery, selectInitialQuery, launchActivity, appSearchData);
     }
 
     /**

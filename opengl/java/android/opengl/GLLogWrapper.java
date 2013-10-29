@@ -1166,11 +1166,6 @@ class GLLogWrapper extends GLWrapperBase {
         bindArrays();
     }
 
-    private void endLogIndices() {
-        log(mStringBuilder.toString());
-        unbindArrays();
-    }
-
     // ---------------------------------------------------------------------
     // GL10 methods:
 
@@ -1519,7 +1514,8 @@ class GLLogWrapper extends GLWrapperBase {
         for (int i = 0; i < count; i++) {
             doElement(mStringBuilder, i, first + i);
         }
-        endLogIndices();
+        log(mStringBuilder.toString());
+        unbindArrays();
         end();
 
         mgl.glDrawArrays(mode, first, count);
@@ -1537,7 +1533,8 @@ class GLLogWrapper extends GLWrapperBase {
         for (int i = 0; i < indexArrayLength; i++) {
             doElement(mStringBuilder, i, indexArray[i]);
         }
-        endLogIndices();
+        log(mStringBuilder.toString());
+        unbindArrays();
         end();
 
         mgl.glDrawElements(mode, count, type, indices);

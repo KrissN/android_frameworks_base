@@ -194,7 +194,8 @@ public final class ProfileGroup implements Parcelable {
                 notification.sound = mSoundOverride;
                 break;
             case SUPPRESS:
-                silenceNotification(notification);
+                notification.defaults &= (~Notification.DEFAULT_SOUND);
+                notification.sound = null;
                 break;
             case DEFAULT:
         }
@@ -203,7 +204,8 @@ public final class ProfileGroup implements Parcelable {
                 notification.defaults |= Notification.DEFAULT_VIBRATE;
                 break;
             case SUPPRESS:
-                suppressVibrate(notification);
+                notification.defaults &= (~Notification.DEFAULT_VIBRATE);
+                notification.vibrate = null;
                 break;
             case DEFAULT:
         }
@@ -212,7 +214,8 @@ public final class ProfileGroup implements Parcelable {
                 notification.defaults |= Notification.DEFAULT_LIGHTS;
                 break;
             case SUPPRESS:
-                suppressLights(notification);
+                notification.defaults &= (~Notification.DEFAULT_LIGHTS);
+                notification.flags &= (~Notification.FLAG_SHOW_LIGHTS);
                 break;
             case DEFAULT:
         }
@@ -244,21 +247,6 @@ public final class ProfileGroup implements Parcelable {
             mRingerMode = Mode.DEFAULT;
             mDirty = true;
         }
-    }
-
-    private void silenceNotification(Notification notification) {
-        notification.defaults &= (~Notification.DEFAULT_SOUND);
-        notification.sound = null;
-    }
-
-    private void suppressVibrate(Notification notification) {
-        notification.defaults &= (~Notification.DEFAULT_VIBRATE);
-        notification.vibrate = null;
-    }
-
-    private void suppressLights(Notification notification) {
-        notification.defaults &= (~Notification.DEFAULT_LIGHTS);
-        notification.flags &= (~Notification.FLAG_SHOW_LIGHTS);
     }
 
     /** @hide */

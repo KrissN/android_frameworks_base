@@ -158,51 +158,6 @@ public class SearchDialog extends Dialog {
     }
 
     /**
-     * We recreate the dialog view each time it becomes visible so as to limit
-     * the scope of any problems with the contained resources.
-     */
-    private void createContentView() {
-        setContentView(com.android.internal.R.layout.search_bar);
-
-        // get the view elements for local access
-        SearchBar searchBar = (SearchBar) findViewById(com.android.internal.R.id.search_bar);
-        searchBar.setSearchDialog(this);
-        mSearchView = (SearchView) findViewById(com.android.internal.R.id.search_view);
-        mSearchView.setIconified(false);
-        mSearchView.setOnCloseListener(mOnCloseListener);
-        mSearchView.setOnQueryTextListener(mOnQueryChangeListener);
-        mSearchView.setOnSuggestionListener(mOnSuggestionSelectionListener);
-        mSearchView.onActionViewExpanded();
-
-        mCloseSearch = findViewById(com.android.internal.R.id.closeButton);
-        mCloseSearch.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                dismiss();
-            }
-        });
-
-        // TODO: Move the badge logic to SearchView or move the badge to search_bar.xml
-        mBadgeLabel = (TextView) mSearchView.findViewById(com.android.internal.R.id.search_badge);
-        mSearchAutoComplete = (AutoCompleteTextView)
-                mSearchView.findViewById(com.android.internal.R.id.search_src_text);
-        mAppIcon = (ImageView) findViewById(com.android.internal.R.id.search_app_icon);
-        mSearchPlate = mSearchView.findViewById(com.android.internal.R.id.search_plate);
-        mWorkingSpinner = getContext().getResources().
-                getDrawable(com.android.internal.R.drawable.search_spinner);
-        // TODO: Restore the spinner for slow suggestion lookups
-        // mSearchAutoComplete.setCompoundDrawablesWithIntrinsicBounds(
-        //        null, null, mWorkingSpinner, null);
-        setWorking(false);
-
-        // pre-hide all the extraneous elements
-        mBadgeLabel.setVisibility(View.GONE);
-
-        // Additional adjustments to make Dialog work for Search
-        mSearchAutoCompleteImeOptions = mSearchAutoComplete.getImeOptions();
-    }
-
-    /**
      * Set up the search dialog
      * 
      * @return true if search dialog launched, false if not
@@ -269,7 +224,50 @@ public class SearchDialog extends Dialog {
         if (!isShowing()) {
             // Recreate the search bar view every time the dialog is shown, to get rid
             // of any bad state in the AutoCompleteTextView etc
-            createContentView();
+            
+            /**
+             * We recreate the dialog view each time it becomes visible so as to limit
+             * the scope of any problems with the contained resources.
+             */
+            setContentView(com.android.internal.R.layout.search_bar);
+
+            // get the view elements for local access
+            SearchBar searchBar = (SearchBar) findViewById(com.android.internal.R.id.search_bar);
+            searchBar.setSearchDialog(this);
+            mSearchView = (SearchView) findViewById(com.android.internal.R.id.search_view);
+            mSearchView.setIconified(false);
+            mSearchView.setOnCloseListener(mOnCloseListener);
+            mSearchView.setOnQueryTextListener(mOnQueryChangeListener);
+            mSearchView.setOnSuggestionListener(mOnSuggestionSelectionListener);
+            mSearchView.onActionViewExpanded();
+
+            mCloseSearch = findViewById(com.android.internal.R.id.closeButton);
+            mCloseSearch.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    dismiss();
+                }
+            });
+
+            // TODO: Move the badge logic to SearchView or move the badge to search_bar.xml
+            mBadgeLabel = (TextView) mSearchView.findViewById(com.android.internal.R.id.search_badge);
+            mSearchAutoComplete = (AutoCompleteTextView)
+                    mSearchView.findViewById(com.android.internal.R.id.search_src_text);
+            mAppIcon = (ImageView) findViewById(com.android.internal.R.id.search_app_icon);
+            mSearchPlate = mSearchView.findViewById(com.android.internal.R.id.search_plate);
+            mWorkingSpinner = getContext().getResources().
+                    getDrawable(com.android.internal.R.drawable.search_spinner);
+            // TODO: Restore the spinner for slow suggestion lookups
+            // mSearchAutoComplete.setCompoundDrawablesWithIntrinsicBounds(
+            //        null, null, mWorkingSpinner, null);
+            setWorking(false);
+
+            // pre-hide all the extraneous elements
+            mBadgeLabel.setVisibility(View.GONE);
+
+            // Additional adjustments to make Dialog work for Search
+            mSearchAutoCompleteImeOptions = mSearchAutoComplete.getImeOptions();
+
             mSearchView.setSearchableInfo(mSearchable);
             mSearchView.setAppSearchData(mAppSearchData);
 

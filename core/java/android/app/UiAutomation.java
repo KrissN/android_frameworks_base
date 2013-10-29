@@ -613,7 +613,22 @@ public final class UiAutomation {
             Canvas canvas = new Canvas(unrotatedScreenShot);
             canvas.translate(unrotatedScreenShot.getWidth() / 2,
                     unrotatedScreenShot.getHeight() / 2);
-            canvas.rotate(getDegreesForRotation(rotation));
+            float deg;
+            switch (rotation) {
+                case Surface.ROTATION_90: {
+                    deg = 360f - 90f;
+                }
+                case Surface.ROTATION_180: {
+                    deg = 360f - 180f;
+                }
+                case Surface.ROTATION_270: {
+                    deg = 360f - 270f;
+                } default: {
+                    deg = 0;
+                }
+            }
+            canvas.rotate(deg);
+
             canvas.translate(- screenshotWidth / 2, - screenshotHeight / 2);
             canvas.drawBitmap(screenShot, 0, 0, null);
             canvas.setBitmap(null);
@@ -642,22 +657,6 @@ public final class UiAutomation {
             ActivityManagerNative.getDefault().setUserIsMonkey(enable);
         } catch (RemoteException re) {
             Log.e(LOG_TAG, "Error while setting run as monkey!", re);
-        }
-    }
-
-    private static float getDegreesForRotation(int value) {
-        switch (value) {
-            case Surface.ROTATION_90: {
-                return 360f - 90f;
-            }
-            case Surface.ROTATION_180: {
-                return 360f - 180f;
-            }
-            case Surface.ROTATION_270: {
-                return 360f - 270f;
-            } default: {
-                return 0;
-            }
         }
     }
 

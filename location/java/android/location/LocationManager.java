@@ -287,10 +287,6 @@ public class LocationManager {
         mContext = context;
     }
 
-    private LocationProvider createProvider(String name, ProviderProperties properties) {
-        return new LocationProvider(name, properties);
-    }
-
     /**
      * Returns a list of the names of all known location providers.
      * <p>All providers are returned, including ones that are not permitted to
@@ -335,13 +331,15 @@ public class LocationManager {
      * given provider.
      */
     public LocationProvider getProvider(String name) {
-        checkProvider(name);
+        if (name == null) {
+            throw new IllegalArgumentException("invalid provider: " + name);
+        }
         try {
             ProviderProperties properties = mService.getProviderProperties(name);
             if (properties == null) {
                 return null;
             }
-            return createProvider(name, properties);
+            return new LocationProvider(name, properties);
         } catch (RemoteException e) {
             Log.e(TAG, "RemoteException", e);
         }
@@ -359,7 +357,9 @@ public class LocationManager {
      * @return list of Strings containing names of the providers
      */
     public List<String> getProviders(Criteria criteria, boolean enabledOnly) {
-        checkCriteria(criteria);
+        if (criteria == null) {
+            throw new IllegalArgumentException("invalid criteria: " + criteria);
+        }
         try {
             return mService.getProviders(criteria, enabledOnly);
         } catch (RemoteException e) {
@@ -391,7 +391,9 @@ public class LocationManager {
      * @return name of the provider that best matches the requirements
      */
     public String getBestProvider(Criteria criteria, boolean enabledOnly) {
-        checkCriteria(criteria);
+        if (criteria == null) {
+            throw new IllegalArgumentException("invalid criteria: " + criteria);
+        }
         try {
             return mService.getBestProvider(criteria, enabledOnly);
         } catch (RemoteException e) {
@@ -422,8 +424,12 @@ public class LocationManager {
      */
     public void requestLocationUpdates(String provider, long minTime, float minDistance,
             LocationListener listener) {
-        checkProvider(provider);
-        checkListener(listener);
+        if (provider == null) {
+            throw new IllegalArgumentException("invalid provider: " + provider);
+        }
+        if (listener == null) {
+            throw new IllegalArgumentException("invalid listener: " + listener);
+        }
 
         LocationRequest request = LocationRequest.createFromDeprecatedProvider(
                 provider, minTime, minDistance, false);
@@ -453,8 +459,12 @@ public class LocationManager {
      */
     public void requestLocationUpdates(String provider, long minTime, float minDistance,
             LocationListener listener, Looper looper) {
-        checkProvider(provider);
-        checkListener(listener);
+        if (provider == null) {
+            throw new IllegalArgumentException("invalid provider: " + provider);
+        }
+        if (listener == null) {
+            throw new IllegalArgumentException("invalid listener: " + listener);
+        }
 
         LocationRequest request = LocationRequest.createFromDeprecatedProvider(
                 provider, minTime, minDistance, false);
@@ -485,8 +495,12 @@ public class LocationManager {
      */
     public void requestLocationUpdates(long minTime, float minDistance, Criteria criteria,
             LocationListener listener, Looper looper) {
-        checkCriteria(criteria);
-        checkListener(listener);
+        if (criteria == null) {
+            throw new IllegalArgumentException("invalid criteria: " + criteria);
+        }
+        if (listener == null) {
+            throw new IllegalArgumentException("invalid listener: " + listener);
+        }
 
         LocationRequest request = LocationRequest.createFromDeprecatedCriteria(
                 criteria, minTime, minDistance, false);
@@ -512,7 +526,9 @@ public class LocationManager {
      */
     public void requestLocationUpdates(String provider, long minTime, float minDistance,
             PendingIntent intent) {
-        checkProvider(provider);
+        if (provider == null) {
+            throw new IllegalArgumentException("invalid provider: " + provider);
+        }
         checkPendingIntent(intent);
 
         LocationRequest request = LocationRequest.createFromDeprecatedProvider(
@@ -613,7 +629,9 @@ public class LocationManager {
      */
     public void requestLocationUpdates(long minTime, float minDistance, Criteria criteria,
             PendingIntent intent) {
-        checkCriteria(criteria);
+        if (criteria == null) {
+            throw new IllegalArgumentException("invalid criteria: " + criteria);
+        }
         checkPendingIntent(intent);
 
         LocationRequest request = LocationRequest.createFromDeprecatedCriteria(
@@ -641,8 +659,12 @@ public class LocationManager {
      * @throws SecurityException if no suitable permission is present
      */
     public void requestSingleUpdate(String provider, LocationListener listener, Looper looper) {
-        checkProvider(provider);
-        checkListener(listener);
+        if (provider == null) {
+            throw new IllegalArgumentException("invalid provider: " + provider);
+        }
+        if (listener == null) {
+            throw new IllegalArgumentException("invalid listener: " + listener);
+        }
 
         LocationRequest request = LocationRequest.createFromDeprecatedProvider(
                 provider, 0, 0, true);
@@ -670,8 +692,12 @@ public class LocationManager {
      * @throws SecurityException if no suitable permission is present
      */
     public void requestSingleUpdate(Criteria criteria, LocationListener listener, Looper looper) {
-        checkCriteria(criteria);
-        checkListener(listener);
+        if (criteria == null) {
+            throw new IllegalArgumentException("invalid criteria: " + criteria);
+        }
+        if (listener == null) {
+            throw new IllegalArgumentException("invalid listener: " + listener);
+        }
 
         LocationRequest request = LocationRequest.createFromDeprecatedCriteria(
                 criteria, 0, 0, true);
@@ -692,7 +718,9 @@ public class LocationManager {
      * @throws SecurityException if no suitable permission is present
      */
     public void requestSingleUpdate(String provider, PendingIntent intent) {
-        checkProvider(provider);
+        if (provider == null) {
+            throw new IllegalArgumentException("invalid provider: " + provider);
+        }
         checkPendingIntent(intent);
 
         LocationRequest request = LocationRequest.createFromDeprecatedProvider(
@@ -715,7 +743,9 @@ public class LocationManager {
      * @throws SecurityException if no suitable permission is present
      */
     public void requestSingleUpdate(Criteria criteria, PendingIntent intent) {
-        checkCriteria(criteria);
+        if (criteria == null) {
+            throw new IllegalArgumentException("invalid criteria: " + criteria);
+        }
         checkPendingIntent(intent);
 
         LocationRequest request = LocationRequest.createFromDeprecatedCriteria(
@@ -782,7 +812,9 @@ public class LocationManager {
      */
     public void requestLocationUpdates(LocationRequest request, LocationListener listener,
             Looper looper) {
-        checkListener(listener);
+        if (listener == null) {
+            throw new IllegalArgumentException("invalid listener: " + listener);
+        }
         requestLocationUpdates(request, listener, looper, null);
     }
 
@@ -849,7 +881,9 @@ public class LocationManager {
      * @throws IllegalArgumentException if listener is null
      */
     public void removeUpdates(LocationListener listener) {
-        checkListener(listener);
+        if (listener == null) {
+            throw new IllegalArgumentException("invalid listener: " + listener);
+        }
         String packageName = mContext.getPackageName();
 
         ListenerTransport transport;
@@ -983,7 +1017,9 @@ public class LocationManager {
      */
     public void addGeofence(LocationRequest request, Geofence fence, PendingIntent intent) {
         checkPendingIntent(intent);
-        checkGeofence(fence);
+        if (fence == null) {
+            throw new IllegalArgumentException("invalid geofence: " + fence);
+        }
 
         try {
             mService.requestGeofence(request, fence, intent, mContext.getPackageName());
@@ -1037,7 +1073,9 @@ public class LocationManager {
      */
     public void removeGeofence(Geofence fence, PendingIntent intent) {
         checkPendingIntent(intent);
-        checkGeofence(fence);
+        if (fence == null) {
+            throw new IllegalArgumentException("invalid geofence: " + fence);
+        }
         String packageName = mContext.getPackageName();
 
         try {
@@ -1082,7 +1120,9 @@ public class LocationManager {
      * @throws SecurityException if no suitable permission is present
      */
     public boolean isProviderEnabled(String provider) {
-        checkProvider(provider);
+        if (provider == null) {
+            throw new IllegalArgumentException("invalid provider: " + provider);
+        }
 
         try {
             return mService.isProviderEnabled(provider);
@@ -1135,7 +1175,9 @@ public class LocationManager {
      * @throws IllegalArgumentException if provider is null or doesn't exist
      */
     public Location getLastKnownLocation(String provider) {
-        checkProvider(provider);
+        if (provider == null) {
+            throw new IllegalArgumentException("invalid provider: " + provider);
+        }
         String packageName = mContext.getPackageName();
         LocationRequest request = LocationRequest.createFromDeprecatedProvider(
                 provider, 0, 0, true);
@@ -1589,24 +1631,6 @@ public class LocationManager {
         }
     }
 
-    private static void checkProvider(String provider) {
-        if (provider == null) {
-            throw new IllegalArgumentException("invalid provider: " + provider);
-        }
-    }
-
-    private static void checkCriteria(Criteria criteria) {
-        if (criteria == null) {
-            throw new IllegalArgumentException("invalid criteria: " + criteria);
-        }
-    }
-
-    private static void checkListener(LocationListener listener) {
-        if (listener == null) {
-            throw new IllegalArgumentException("invalid listener: " + listener);
-        }
-    }
-
     private void checkPendingIntent(PendingIntent intent) {
         if (intent == null) {
             throw new IllegalArgumentException("invalid pending intent: " + intent);
@@ -1619,12 +1643,6 @@ public class LocationManager {
             } else {
                 Log.w(TAG, e);
             }
-        }
-    }
-
-    private static void checkGeofence(Geofence fence) {
-        if (fence == null) {
-            throw new IllegalArgumentException("invalid geofence: " + fence);
         }
     }
 }
