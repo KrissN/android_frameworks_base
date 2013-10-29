@@ -1614,34 +1614,6 @@ public class Notification implements Parcelable
             return big;
         }
 
-        private RemoteViews makeContentView() {
-            if (mContentView != null) {
-                return mContentView;
-            } else {
-                return applyStandardTemplate(R.layout.notification_template_base, true); // no more special large_icon flavor
-            }
-        }
-
-        private RemoteViews makeTickerView() {
-            if (mTickerView != null) {
-                return mTickerView;
-            } else {
-                if (mContentView == null) {
-                    return applyStandardTemplate(mLargeIcon == null
-                            ? R.layout.status_bar_latest_event_ticker
-                            : R.layout.status_bar_latest_event_ticker_large_icon, true);
-                } else {
-                    return null;
-                }
-            }
-        }
-
-        private RemoteViews makeBigContentView() {
-            if (mActions.size() == 0) return null;
-
-            return applyStandardTemplateWithActions(R.layout.notification_template_big_base);
-        }
-
         private RemoteViews generateActionButton(Action action) {
             final boolean tombstone = (action.actionIntent == null);
             RemoteViews button = new RemoteViews(mContext.getPackageName(),
@@ -1665,12 +1637,26 @@ public class Notification implements Parcelable
             n.icon = mSmallIcon;
             n.iconLevel = mSmallIconLevel;
             n.number = mNumber;
-            n.contentView = makeContentView();
+            if (mContentView != null) {
+                n.contentView = mContentView;
+            } else {
+                n.contentView = applyStandardTemplate(R.layout.notification_template_base, true); // no more special large_icon flavor
+            }
             n.contentIntent = mContentIntent;
             n.deleteIntent = mDeleteIntent;
             n.fullScreenIntent = mFullScreenIntent;
             n.tickerText = mTickerText;
-            n.tickerView = makeTickerView();
+            if (mTickerView != null) {
+                n.tickerView = mTickerView;
+            } else {
+                if (mContentView == null) {
+                    n.tickerView = applyStandardTemplate(mLargeIcon == null
+                            ? R.layout.status_bar_latest_event_ticker
+                            : R.layout.status_bar_latest_event_ticker_large_icon, true);
+                } else {
+                    n.tickerView = null;
+                }
+            }
             n.largeIcon = mLargeIcon;
             n.sound = mSound;
             n.audioStreamType = mAudioStreamType;
@@ -1680,7 +1666,10 @@ public class Notification implements Parcelable
             n.ledOffMS = mLedOffMs;
             n.defaults = mDefaults;
             n.flags = mFlags;
-            n.bigContentView = makeBigContentView();
+            if (mActions.size() == 0)
+                n.bigContentView = null;
+            else
+                n.bigContentView = applyStandardTemplateWithActions(R.layout.notification_template_big_base);
             if (mLedOnMs != 0 || mLedOffMs != 0) {
                 n.flags |= FLAG_SHOW_LIGHTS;
             }
@@ -1918,14 +1907,6 @@ public class Notification implements Parcelable
             return this;
         }
 
-        private RemoteViews makeBigContentView() {
-            RemoteViews contentView = getStandardView(R.layout.notification_template_big_picture);
-
-            contentView.setImageViewBitmap(R.id.big_picture, mPicture);
-
-            return contentView;
-        }
-
         /**
          * @hide
          */
@@ -1945,7 +1926,10 @@ public class Notification implements Parcelable
             if (mBigLargeIconSet ) {
                 mBuilder.mLargeIcon = mBigLargeIcon;
             }
-            wip.bigContentView = makeBigContentView();
+            RemoteViews contentView = getStandardView(R.layout.notification_template_big_picture);
+            contentView.setImageViewBitmap(R.id.big_picture, mPicture);
+            wip.bigContentView = contentView;
+
             return wip;
         }
     }
@@ -2012,7 +1996,11 @@ public class Notification implements Parcelable
             extras.putCharSequence(EXTRA_TEXT, mBigText);
         }
 
-        private RemoteViews makeBigContentView() {
+        @Override
+        public Notification build() {
+            checkBuilder();
+            Notification wip = mBuilder.buildUnstyled();
+
             // Remove the content text so line3 only shows if you have a summary
             final boolean hadThreeLines = (mBuilder.mContentText != null && mBuilder.mSubText != null);
             mBuilder.mContentText = null;
@@ -2028,14 +2016,7 @@ public class Notification implements Parcelable
             contentView.setViewVisibility(R.id.big_text, View.VISIBLE);
             contentView.setViewVisibility(R.id.text2, View.GONE);
 
-            return contentView;
-        }
-
-        @Override
-        public Notification build() {
-            checkBuilder();
-            Notification wip = mBuilder.buildUnstyled();
-            wip.bigContentView = makeBigContentView();
+            wip.bigContentView = contentView;
 
             wip.extras.putCharSequence(EXTRA_TEXT, mBigText);
 
@@ -2107,7 +2088,11 @@ public class Notification implements Parcelable
             extras.putCharSequenceArray(EXTRA_TEXT_LINES, mTexts.toArray(a));
         }
 
-        private RemoteViews makeBigContentView() {
+        @Override
+        public Notification build() {
+            checkBuilder();
+            Notification wip = mBuilder.buildUnstyled();
+
             // Remove the content text so line3 disappears unless you have a summary
             mBuilder.mContentText = null;
             RemoteViews contentView = getStandardView(R.layout.notification_template_inbox);
@@ -2139,14 +2124,7 @@ public class Notification implements Parcelable
             contentView.setViewVisibility(R.id.inbox_more,
                     mTexts.size() > rowIds.length ? View.VISIBLE : View.GONE);
 
-            return contentView;
-        }
-
-        @Override
-        public Notification build() {
-            checkBuilder();
-            Notification wip = mBuilder.buildUnstyled();
-            wip.bigContentView = makeBigContentView();
+            wip.bigContentView = contentView;
 
             return wip;
         }

@@ -185,8 +185,10 @@ public class GpsNetInitiatedHandler {
             return;
         }
 
-        String title = getNotifTitle(notif, mContext);
-        String message = getNotifMessage(notif, mContext);
+        String title = String.format(mContext.getString(R.string.gpsNotifTitle));
+        String message = String.format(mContext.getString(R.string.gpsNotifMessage),
+                decodeString(notif.requestorId, mIsHexInput, notif.requestorIdEncoding),
+                decodeString(notif.text, mIsHexInput, notif.textEncoding));
 
         if (DEBUG) Log.d(TAG, "setNiNotification, notifyId: " + notif.notificationId +
                 ", title: " + title +
@@ -206,7 +208,9 @@ public class GpsNetInitiatedHandler {
         }        
 
         mNiNotification.flags = Notification.FLAG_ONGOING_EVENT | Notification.FLAG_AUTO_CANCEL;
-        mNiNotification.tickerText = getNotifTicker(notif, mContext);
+        mNiNotification.tickerText = String.format(mContext.getString(R.string.gpsNotifTicker),
+                decodeString(notif.requestorId, mIsHexInput, notif.requestorIdEncoding),
+                decodeString(notif.text, mIsHexInput, notif.textEncoding));
 
         // if not to popup dialog immediately, pending intent will open the dialog
         Intent intent = !mPopupImmediately ? getDlgIntent(notif) : new Intent();
@@ -234,8 +238,10 @@ public class GpsNetInitiatedHandler {
     private Intent getDlgIntent(GpsNiNotification notif)
     {
         Intent intent = new Intent();
-        String title = getDialogTitle(notif, mContext);
-        String message = getDialogMessage(notif, mContext);
+        String title = String.format(mContext.getString(R.string.gpsNotifTitle));
+        String message = String.format(mContext.getString(R.string.gpsNotifMessage),
+                decodeString(notif.requestorId, mIsHexInput, notif.requestorIdEncoding),
+                decodeString(notif.text, mIsHexInput, notif.textEncoding));
 
         // directly bring up the NI activity
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -384,42 +390,4 @@ public class GpsNetInitiatedHandler {
         }
         return decoded;
     }
-
-    // change this to configure notification display
-    static private String getNotifTicker(GpsNiNotification notif, Context context)
-    {
-        String ticker = String.format(context.getString(R.string.gpsNotifTicker),
-                decodeString(notif.requestorId, mIsHexInput, notif.requestorIdEncoding),
-                decodeString(notif.text, mIsHexInput, notif.textEncoding));
-        return ticker;
-    }
-
-    // change this to configure notification display
-    static private String getNotifTitle(GpsNiNotification notif, Context context)
-    {
-        String title = String.format(context.getString(R.string.gpsNotifTitle));
-        return title;
-    }
-
-    // change this to configure notification display
-    static private String getNotifMessage(GpsNiNotification notif, Context context)
-    {
-        String message = String.format(context.getString(R.string.gpsNotifMessage),
-                decodeString(notif.requestorId, mIsHexInput, notif.requestorIdEncoding),
-                decodeString(notif.text, mIsHexInput, notif.textEncoding));
-        return message;
-    }       
-
-    // change this to configure dialog display (for verification)
-    static public String getDialogTitle(GpsNiNotification notif, Context context)
-    {
-        return getNotifTitle(notif, context);
-    }
-
-    // change this to configure dialog display (for verification)
-    static private String getDialogMessage(GpsNiNotification notif, Context context)
-    {
-        return getNotifMessage(notif, context);
-    }
-
 }

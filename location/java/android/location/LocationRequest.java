@@ -258,7 +258,17 @@ public final class LocationRequest implements Parcelable {
      * @return the same object, so that setters can be chained
      */
     public LocationRequest setQuality(int quality) {
-        checkQuality(quality);
+        switch (quality) {
+            case ACCURACY_FINE:
+            case ACCURACY_BLOCK:
+            case ACCURACY_CITY:
+            case POWER_NONE:
+            case POWER_LOW:
+            case POWER_HIGH:
+                break;
+            default:
+                throw new IllegalArgumentException("invalid quality: " + quality);
+        }
         mQuality = quality;
         return this;
     }
@@ -301,7 +311,9 @@ public final class LocationRequest implements Parcelable {
      * @return the same object, so that setters can be chained
      */
     public LocationRequest setInterval(long millis) {
-        checkInterval(millis);
+        if (millis < 0) {
+            throw new IllegalArgumentException("invalid interval: " + millis);
+        }
         mInterval = millis;
         if (!mExplicitFastestInterval) {
             mFastestInterval = (long)(mInterval / FASTEST_INTERVAL_FACTOR);
@@ -348,7 +360,9 @@ public final class LocationRequest implements Parcelable {
      * @return the same object, so that setters can be chained
      */
     public LocationRequest setFastestInterval(long millis) {
-        checkInterval(millis);
+        if (millis < 0) {
+            throw new IllegalArgumentException("invalid interval: " + millis);
+        }
         mExplicitFastestInterval = true;
         mFastestInterval = millis;
         return this;
@@ -472,7 +486,9 @@ public final class LocationRequest implements Parcelable {
 
     /** @hide */
     public LocationRequest setProvider(String provider) {
-        checkProvider(provider);
+        if (provider == null) {
+            throw new IllegalArgumentException("invalid provider: " + provider);
+        }
         mProvider = provider;
         return this;
     }
@@ -484,7 +500,9 @@ public final class LocationRequest implements Parcelable {
 
     /** @hide */
     public LocationRequest setSmallestDisplacement(float meters) {
-        checkDisplacement(meters);
+        if (meters < 0.0f) {
+            throw new IllegalArgumentException("invalid displacement: " + meters);
+        }
         mSmallestDisplacement = meters;
         return this;
     }
@@ -492,38 +510,6 @@ public final class LocationRequest implements Parcelable {
     /** @hide */
     public float getSmallestDisplacement() {
         return mSmallestDisplacement;
-    }
-
-    private static void checkInterval(long millis) {
-        if (millis < 0) {
-            throw new IllegalArgumentException("invalid interval: " + millis);
-        }
-    }
-
-    private static void checkQuality(int quality) {
-        switch (quality) {
-            case ACCURACY_FINE:
-            case ACCURACY_BLOCK:
-            case ACCURACY_CITY:
-            case POWER_NONE:
-            case POWER_LOW:
-            case POWER_HIGH:
-                break;
-            default:
-                throw new IllegalArgumentException("invalid quality: " + quality);
-        }
-    }
-
-    private static void checkDisplacement(float meters) {
-        if (meters < 0.0f) {
-            throw new IllegalArgumentException("invalid displacement: " + meters);
-        }
-    }
-
-    private static void checkProvider(String name) {
-        if (name == null) {
-            throw new IllegalArgumentException("invalid provider: " + name);
-        }
     }
 
     public static final Parcelable.Creator<LocationRequest> CREATOR =

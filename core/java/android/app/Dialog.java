@@ -281,7 +281,10 @@ public class Dialog implements DialogInterface, Window.Callback,
             mWindowManager.addView(mDecor, l);
             mShowing = true;
     
-            sendShowMessage();
+            if (mShowMessage != null) {
+                // Obtain a new message so this dialog can be re-used
+                Message.obtain(mShowMessage).sendToTarget();
+            }
         } finally {
         }
     }
@@ -330,21 +333,10 @@ public class Dialog implements DialogInterface, Window.Callback,
             onStop();
             mShowing = false;
             
-            sendDismissMessage();
-        }
-    }
-
-    private void sendDismissMessage() {
-        if (mDismissMessage != null) {
-            // Obtain a new message so this dialog can be re-used
-            Message.obtain(mDismissMessage).sendToTarget();
-        }
-    }
-
-    private void sendShowMessage() {
-        if (mShowMessage != null) {
-            // Obtain a new message so this dialog can be re-used
-            Message.obtain(mShowMessage).sendToTarget();
+            if (mDismissMessage != null) {
+                // Obtain a new message so this dialog can be re-used
+                Message.obtain(mDismissMessage).sendToTarget();
+            }
         }
     }
 

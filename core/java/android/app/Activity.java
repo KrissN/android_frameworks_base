@@ -917,7 +917,34 @@ public class Activity extends ContextThemeWrapper
      */
     final void performRestoreInstanceState(Bundle savedInstanceState) {
         onRestoreInstanceState(savedInstanceState);
-        restoreManagedDialogs(savedInstanceState);
+
+        /**
+         * Restore the state of any saved managed dialogs.
+         */
+        final Bundle b = savedInstanceState.getBundle(SAVED_DIALOGS_TAG);
+        if (b == null) {
+            return;
+        }
+
+        final int[] ids = b.getIntArray(SAVED_DIALOG_IDS_KEY);
+        final int numDialogs = ids.length;
+        mManagedDialogs = new SparseArray<ManagedDialog>(numDialogs);
+        for (int i = 0; i < numDialogs; i++) {
+            final Integer dialogId = ids[i];
+            Bundle dialogState = b.getBundle(savedDialogKeyFor(dialogId));
+            if (dialogState != null) {
+                // Calling onRestoreInstanceState() below will invoke dispatchOnCreate
+                // so tell createDialog() not to do it, otherwise we get an exception
+                final ManagedDialog md = new ManagedDialog();
+                md.mArgs = b.getBundle(savedDialogArgsKeyFor(dialogId));
+                md.mDialog = createDialog(dialogId, dialogState, md.mArgs);
+                if (md.mDialog != null) {
+                    mManagedDialogs.put(dialogId, md);
+                    onPrepareDialog(dialogId, md.mDialog, md.mArgs);
+                    md.mDialog.onRestoreInstanceState(dialogState);
+                }
+            }
+        }
     }
 
     /**
@@ -949,38 +976,6 @@ public class Activity extends ContextThemeWrapper
         }
     }
     
-    /**
-     * Restore the state of any saved managed dialogs.
-     *
-     * @param savedInstanceState The bundle to restore from.
-     */
-    private void restoreManagedDialogs(Bundle savedInstanceState) {
-        final Bundle b = savedInstanceState.getBundle(SAVED_DIALOGS_TAG);
-        if (b == null) {
-            return;
-        }
-
-        final int[] ids = b.getIntArray(SAVED_DIALOG_IDS_KEY);
-        final int numDialogs = ids.length;
-        mManagedDialogs = new SparseArray<ManagedDialog>(numDialogs);
-        for (int i = 0; i < numDialogs; i++) {
-            final Integer dialogId = ids[i];
-            Bundle dialogState = b.getBundle(savedDialogKeyFor(dialogId));
-            if (dialogState != null) {
-                // Calling onRestoreInstanceState() below will invoke dispatchOnCreate
-                // so tell createDialog() not to do it, otherwise we get an exception
-                final ManagedDialog md = new ManagedDialog();
-                md.mArgs = b.getBundle(savedDialogArgsKeyFor(dialogId));
-                md.mDialog = createDialog(dialogId, dialogState, md.mArgs);
-                if (md.mDialog != null) {
-                    mManagedDialogs.put(dialogId, md);
-                    onPrepareDialog(dialogId, md.mDialog, md.mArgs);
-                    md.mDialog.onRestoreInstanceState(dialogState);
-                }
-            }
-        }
-    }
-
     private Dialog createDialog(Integer dialogId, Bundle state, Bundle args) {
         final Dialog dialog = onCreateDialog(dialogId, args);
         if (dialog == null) {

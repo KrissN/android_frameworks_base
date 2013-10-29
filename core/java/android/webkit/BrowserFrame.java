@@ -360,16 +360,14 @@ class BrowserFrame extends Handler {
     private void reportError(int errorCode, String description, String failingUrl) {
         // As this is called for the main resource and loading will be stopped
         // after, reset the state variables.
-        resetLoadingStates();
+
+        mCommitted = true;
+        mFirstLayoutDone = true;
+
         if (description == null || description.isEmpty()) {
             description = ErrorStrings.getString(errorCode, mContext);
         }
         mCallbackProxy.onReceivedError(errorCode, description, failingUrl);
-    }
-
-    private void resetLoadingStates() {
-        mCommitted = true;
-        mFirstLayoutDone = true;
     }
 
     /* package */boolean committed() {
@@ -467,7 +465,9 @@ class BrowserFrame extends Handler {
 
         if (isMainFrame || loadType == FRAME_LOADTYPE_STANDARD) {
             if (isMainFrame) {
-                resetLoadingStates();
+                mCommitted = true;
+                mFirstLayoutDone = true;
+
                 mCallbackProxy.switchOutDrawHistory();
                 mCallbackProxy.onPageFinished(url);
             }
@@ -1290,7 +1290,8 @@ class BrowserFrame extends Handler {
      */
     public void stopLoading() {
         if (mIsMainFrame) {
-            resetLoadingStates();
+            mCommitted = true;
+            mFirstLayoutDone = true;
         }
         nativeStopLoading();
     }

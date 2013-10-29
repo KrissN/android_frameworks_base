@@ -74,7 +74,7 @@ final class SharedPreferencesImpl implements SharedPreferences {
 
     SharedPreferencesImpl(File file, int mode) {
         mFile = file;
-        mBackupFile = makeBackupFile(file);
+        mBackupFile = new File(file.getPath() + ".bak");
         mMode = mode;
         mLoaded = false;
         mMap = null;
@@ -139,10 +139,6 @@ final class SharedPreferencesImpl implements SharedPreferences {
             mMap = new HashMap<String, Object>();
         }
         notifyAll();
-    }
-
-    private static File makeBackupFile(File prefsFile) {
-        return new File(prefsFile.getPath() + ".bak");
     }
 
     void startReloadIfChangedUnexpectedly() {

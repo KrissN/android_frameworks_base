@@ -494,7 +494,12 @@ public class DownloadManager {
                             file.getAbsolutePath());
                 }
             }
-            setDestinationFromBase(file, subPath);
+
+            if (subPath == null) {
+                throw new NullPointerException("subPath cannot be null");
+            }
+            mDestinationUri = Uri.withAppendedPath(Uri.fromFile(file), subPath);
+            
             return this;
         }
 
@@ -528,15 +533,13 @@ public class DownloadManager {
                             file.getAbsolutePath());
                 }
             }
-            setDestinationFromBase(file, subPath);
-            return this;
-        }
 
-        private void setDestinationFromBase(File base, String subPath) {
             if (subPath == null) {
                 throw new NullPointerException("subPath cannot be null");
             }
-            mDestinationUri = Uri.withAppendedPath(Uri.fromFile(base), subPath);
+            mDestinationUri = Uri.withAppendedPath(Uri.fromFile(file), subPath);
+            
+            return this;
         }
 
         /**
@@ -714,7 +717,12 @@ public class DownloadManager {
                     SCANNABLE_VALUE_NO);
 
             if (!mRequestHeaders.isEmpty()) {
-                encodeHttpHeaders(values);
+                int index = 0;
+                for (Pair<String, String> header : mRequestHeaders) {
+                    String headerString = header.first + ": " + header.second;
+                    values.put(Downloads.Impl.RequestHeaders.INSERT_KEY_PREFIX + index, headerString);
+                    index++;
+                }
             }
 
             putIfNonNull(values, Downloads.Impl.COLUMN_TITLE, mTitle);
@@ -728,15 +736,6 @@ public class DownloadManager {
             values.put(Downloads.Impl.COLUMN_IS_VISIBLE_IN_DOWNLOADS_UI, mIsVisibleInDownloadsUi);
 
             return values;
-        }
-
-        private void encodeHttpHeaders(ContentValues values) {
-            int index = 0;
-            for (Pair<String, String> header : mRequestHeaders) {
-                String headerString = header.first + ": " + header.second;
-                values.put(Downloads.Impl.RequestHeaders.INSERT_KEY_PREFIX + index, headerString);
-                index++;
-            }
         }
 
         private void putIfNonNull(ContentValues contentValues, String key, Object value) {
@@ -1316,67 +1315,59 @@ public class DownloadManager {
         private long getReason(int status) {
             switch (translateStatus(status)) {
                 case STATUS_FAILED:
-                    return getErrorCode(status);
+                    if ((400 <= status && status < Downloads.Impl.MIN_ARTIFICIAL_ERROR_STATUS)
+                            || (500 <= status && status < 600)) {
+                        // HTTP status code
+                        return status;
+                    }
+
+                    switch (status) {
+                        case Downloads.Impl.STATUS_FILE_ERROR:
+                            return ERROR_FILE_ERROR;
+
+                        case Downloads.Impl.STATUS_UNHANDLED_HTTP_CODE:
+                        case Downloads.Impl.STATUS_UNHANDLED_REDIRECT:
+                            return ERROR_UNHANDLED_HTTP_CODE;
+
+                        case Downloads.Impl.STATUS_HTTP_DATA_ERROR:
+                            return ERROR_HTTP_DATA_ERROR;
+
+                        case Downloads.Impl.STATUS_TOO_MANY_REDIRECTS:
+                            return ERROR_TOO_MANY_REDIRECTS;
+
+                        case Downloads.Impl.STATUS_INSUFFICIENT_SPACE_ERROR:
+                            return ERROR_INSUFFICIENT_SPACE;
+
+                        case Downloads.Impl.STATUS_DEVICE_NOT_FOUND_ERROR:
+                            return ERROR_DEVICE_NOT_FOUND;
+
+                        case Downloads.Impl.STATUS_CANNOT_RESUME:
+                            return ERROR_CANNOT_RESUME;
+
+                        case Downloads.Impl.STATUS_FILE_ALREADY_EXISTS_ERROR:
+                            return ERROR_FILE_ALREADY_EXISTS;
+
+                        default:
+                            return ERROR_UNKNOWN;
+                    }
 
                 case STATUS_PAUSED:
-                    return getPausedReason(status);
+                    switch (status) {
+                        case Downloads.Impl.STATUS_WAITING_TO_RETRY:
+                            return PAUSED_WAITING_TO_RETRY;
+
+                        case Downloads.Impl.STATUS_WAITING_FOR_NETWORK:
+                            return PAUSED_WAITING_FOR_NETWORK;
+
+                        case Downloads.Impl.STATUS_QUEUED_FOR_WIFI:
+                            return PAUSED_QUEUED_FOR_WIFI;
+
+                        default:
+                            return PAUSED_UNKNOWN;
+                    }
 
                 default:
                     return 0; // arbitrary value when status is not an error
-            }
-        }
-
-        private long getPausedReason(int status) {
-            switch (status) {
-                case Downloads.Impl.STATUS_WAITING_TO_RETRY:
-                    return PAUSED_WAITING_TO_RETRY;
-
-                case Downloads.Impl.STATUS_WAITING_FOR_NETWORK:
-                    return PAUSED_WAITING_FOR_NETWORK;
-
-                case Downloads.Impl.STATUS_QUEUED_FOR_WIFI:
-                    return PAUSED_QUEUED_FOR_WIFI;
-
-                default:
-                    return PAUSED_UNKNOWN;
-            }
-        }
-
-        private long getErrorCode(int status) {
-            if ((400 <= status && status < Downloads.Impl.MIN_ARTIFICIAL_ERROR_STATUS)
-                    || (500 <= status && status < 600)) {
-                // HTTP status code
-                return status;
-            }
-
-            switch (status) {
-                case Downloads.Impl.STATUS_FILE_ERROR:
-                    return ERROR_FILE_ERROR;
-
-                case Downloads.Impl.STATUS_UNHANDLED_HTTP_CODE:
-                case Downloads.Impl.STATUS_UNHANDLED_REDIRECT:
-                    return ERROR_UNHANDLED_HTTP_CODE;
-
-                case Downloads.Impl.STATUS_HTTP_DATA_ERROR:
-                    return ERROR_HTTP_DATA_ERROR;
-
-                case Downloads.Impl.STATUS_TOO_MANY_REDIRECTS:
-                    return ERROR_TOO_MANY_REDIRECTS;
-
-                case Downloads.Impl.STATUS_INSUFFICIENT_SPACE_ERROR:
-                    return ERROR_INSUFFICIENT_SPACE;
-
-                case Downloads.Impl.STATUS_DEVICE_NOT_FOUND_ERROR:
-                    return ERROR_DEVICE_NOT_FOUND;
-
-                case Downloads.Impl.STATUS_CANNOT_RESUME:
-                    return ERROR_CANNOT_RESUME;
-
-                case Downloads.Impl.STATUS_FILE_ALREADY_EXISTS_ERROR:
-                    return ERROR_FILE_ALREADY_EXISTS;
-
-                default:
-                    return ERROR_UNKNOWN;
             }
         }
 

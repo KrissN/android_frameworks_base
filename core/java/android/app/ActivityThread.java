@@ -1637,10 +1637,6 @@ public final class ActivityThread {
         return sPackageManager;
     }
 
-    private void flushDisplayMetricsLocked() {
-        mDefaultDisplayMetrics.clear();
-    }
-
     // NOTE: this method can return null if the SystemServer is still
     // initializing (for example, of another SystemServer component is accessing
     // a resources object)
@@ -1795,17 +1791,6 @@ public final class ActivityThread {
             // XXX need to remove entries when weak references go away
             mActiveResources.put(key, new WeakReference<Resources>(r));
             return r;
-        }
-    }
-
-    private void detachThemeAssets(AssetManager assets) {
-        String themePackageName = assets.getThemePackageName();
-        int themeCookie = assets.getThemeCookie();
-        if (!TextUtils.isEmpty(themePackageName) && themeCookie != 0) {
-            assets.detachThemePath(themePackageName, themeCookie);
-            assets.setThemePackageName(null);
-            assets.setThemeCookie(0);
-            assets.clearRedirections();
         }
     }
 
@@ -4010,7 +3995,9 @@ public final class ActivityThread {
             return 0;
         }
         int changes = mResConfiguration.updateFrom(config);
-        flushDisplayMetricsLocked();
+
+        mDefaultDisplayMetrics.clear();
+        
         DisplayMetrics defaultDisplayMetrics = getDisplayMetricsLocked(
                 Display.DEFAULT_DISPLAY, null);
 
@@ -4050,7 +4037,16 @@ public final class ActivityThread {
                 if (themeChanged) {
                     AssetManager am = r.getAssets();
                     if (am.hasThemeSupport()) {
-                        detachThemeAssets(am);
+
+                        String themePackageName = am.getThemePackageName();
+                        int themeCookie = am.getThemeCookie();
+                        if (!TextUtils.isEmpty(themePackageName) && themeCookie != 0) {
+                            am.detachThemePath(themePackageName, themeCookie);
+                            am.setThemePackageName(null);
+                            am.setThemeCookie(0);
+                            am.clearRedirections();
+                        }
+                        
                         if (!TextUtils.isEmpty(config.customTheme.getThemePackageName())) {
                             attachThemeAssets(am, config.customTheme);
                         }

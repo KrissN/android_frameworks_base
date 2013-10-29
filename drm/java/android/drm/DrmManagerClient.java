@@ -251,7 +251,17 @@ public class DrmManagerClient {
      */
     public DrmManagerClient(Context context) {
         mContext = context;
-        createEventThreads();
+
+        // Create event threads
+        if (mEventHandler == null && mInfoHandler == null) {
+            mInfoThread = new HandlerThread("DrmManagerClient.InfoHandler");
+            mInfoThread.start();
+            mInfoHandler = new InfoHandler(mInfoThread.getLooper());
+
+            mEventThread = new HandlerThread("DrmManagerClient.EventHandler");
+            mEventThread.start();
+            mEventHandler = new EventHandler(mEventThread.getLooper());
+        }
 
         // save the unique id
         mUniqueId = _initialize();
@@ -307,7 +317,7 @@ public class DrmManagerClient {
     public synchronized void setOnInfoListener(OnInfoListener infoListener) {
         mOnInfoListener = infoListener;
         if (null != infoListener) {
-            createListeners();
+            _setListeners(mUniqueId, new WeakReference<DrmManagerClient>(this));
         }
     }
 
@@ -320,7 +330,7 @@ public class DrmManagerClient {
     public synchronized void setOnEventListener(OnEventListener eventListener) {
         mOnEventListener = eventListener;
         if (null != eventListener) {
-            createListeners();
+            _setListeners(mUniqueId, new WeakReference<DrmManagerClient>(this));
         }
     }
 
@@ -333,7 +343,7 @@ public class DrmManagerClient {
     public synchronized void setOnErrorListener(OnErrorListener errorListener) {
         mOnErrorListener = errorListener;
         if (null != errorListener) {
-            createListeners();
+            _setListeners(mUniqueId, new WeakReference<DrmManagerClient>(this));
         }
     }
 
@@ -899,21 +909,5 @@ public class DrmManagerClient {
     private native DrmConvertedStatus _closeConvertSession(int uniqueId, int convertId);
 
     private native DrmSupportInfo[] _getAllSupportInfo(int uniqueId);
-
-    private void createEventThreads() {
-        if (mEventHandler == null && mInfoHandler == null) {
-            mInfoThread = new HandlerThread("DrmManagerClient.InfoHandler");
-            mInfoThread.start();
-            mInfoHandler = new InfoHandler(mInfoThread.getLooper());
-
-            mEventThread = new HandlerThread("DrmManagerClient.EventHandler");
-            mEventThread.start();
-            mEventHandler = new EventHandler(mEventThread.getLooper());
-        }
-    }
-
-    private void createListeners() {
-        _setListeners(mUniqueId, new WeakReference<DrmManagerClient>(this));
-    }
 }
 

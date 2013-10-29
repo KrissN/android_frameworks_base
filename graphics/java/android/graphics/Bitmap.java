@@ -246,21 +246,6 @@ public final class Bitmap implements Parcelable {
     }
 
     /**
-     * Common code for checking that x and y are >= 0
-     *
-     * @param x x coordinate to ensure is >= 0
-     * @param y y coordinate to ensure is >= 0
-     */
-    private static void checkXYSign(int x, int y) {
-        if (x < 0) {
-            throw new IllegalArgumentException("x must be >= 0");
-        }
-        if (y < 0) {
-            throw new IllegalArgumentException("y must be >= 0");
-        }
-    }
-
-    /**
      * Common code for checking that width and height are > 0
      *
      * @param width  width to ensure is > 0
@@ -548,7 +533,12 @@ public final class Bitmap implements Parcelable {
     public static Bitmap createBitmap(Bitmap source, int x, int y, int width, int height,
             Matrix m, boolean filter) {
 
-        checkXYSign(x, y);
+        if (x < 0) {
+            throw new IllegalArgumentException("x must be >= 0");
+        }
+        if (y < 0) {
+            throw new IllegalArgumentException("y must be >= 0");
+        }
         checkWidthHeight(width, height);
         if (x + width > source.getWidth()) {
             throw new IllegalArgumentException("x + width must be <= bitmap.width()");
@@ -1158,7 +1148,12 @@ public final class Bitmap implements Parcelable {
      * @param y y coordinate of the pixel
      */
     private void checkPixelAccess(int x, int y) {
-        checkXYSign(x, y);
+        if (x < 0) {
+            throw new IllegalArgumentException("x must be >= 0");
+        }
+        if (y < 0) {
+            throw new IllegalArgumentException("y must be >= 0");
+        }
         if (x >= getWidth()) {
             throw new IllegalArgumentException("x must be < bitmap.width()");
         }
@@ -1181,7 +1176,12 @@ public final class Bitmap implements Parcelable {
     */
     private void checkPixelsAccess(int x, int y, int width, int height,
                                    int offset, int stride, int pixels[]) {
-        checkXYSign(x, y);
+        if (x < 0) {
+            throw new IllegalArgumentException("x must be >= 0");
+        }
+        if (y < 0) {
+            throw new IllegalArgumentException("y must be >= 0");
+        }
         if (width < 0) {
             throw new IllegalArgumentException("width must be >= 0");
         }
