@@ -340,16 +340,13 @@ final class WebViewInputDispatcher {
             DispatchEvent d = obtainDispatchEventLocked(eventToEnqueue, eventType, 0,
                     webKitXOffset, webKitYOffset, webKitScale);
             updateStateTrackersLocked(d, event);
-            enqueueEventLocked(d);
+            if (!shouldSkipWebKit(d)) {
+                enqueueWebKitEventLocked(d);
+            } else {
+                enqueueUiEventLocked(d);
+            }
         }
         return true;
-    }
-
-    private void scheduleLongPressLocked() {
-        unscheduleLongPressLocked();
-        mPostLongPressScheduled = true;
-        mUiHandler.sendEmptyMessageDelayed(UiHandler.MSG_LONG_PRESS,
-                LONG_PRESS_TIMEOUT);
     }
 
     private void unscheduleLongPressLocked() {
@@ -385,7 +382,11 @@ final class WebViewInputDispatcher {
             eventToEnqueue.setAction(MotionEvent.ACTION_MOVE);
             DispatchEvent d = obtainDispatchEventLocked(eventToEnqueue, EVENT_TYPE_LONG_PRESS, 0,
                     mPostLastWebKitXOffset, mPostLastWebKitYOffset, mPostLastWebKitScale);
-            enqueueEventLocked(d);
+            if (!shouldSkipWebKit(d)) {
+                enqueueWebKitEventLocked(d);
+            } else {
+                enqueueUiEventLocked(d);
+            }
         }
     }
 
@@ -475,7 +476,11 @@ final class WebViewInputDispatcher {
             MotionEvent eventToEnqueue = MotionEvent.obtainNoHistory(event);
             DispatchEvent d = obtainDispatchEventLocked(eventToEnqueue, EVENT_TYPE_CLICK, 0,
                     mPostLastWebKitXOffset, mPostLastWebKitYOffset, mPostLastWebKitScale);
-            enqueueEventLocked(d);
+            if (!shouldSkipWebKit(d)) {
+                enqueueWebKitEventLocked(d);
+            } else {
+                enqueueUiEventLocked(d);
+            }
         }
     }
 
@@ -506,7 +511,11 @@ final class WebViewInputDispatcher {
         MotionEvent eventToEnqueue = MotionEvent.obtainNoHistory(event);
         DispatchEvent d = obtainDispatchEventLocked(eventToEnqueue, EVENT_TYPE_DOUBLE_TAP, 0,
                 mPostLastWebKitXOffset, mPostLastWebKitYOffset, mPostLastWebKitScale);
-        enqueueEventLocked(d);
+        if (!shouldSkipWebKit(d)) {
+            enqueueWebKitEventLocked(d);
+        } else {
+            enqueueUiEventLocked(d);
+        }
     }
 
     private void enqueueHitTestLocked(MotionEvent event) {
@@ -514,7 +523,11 @@ final class WebViewInputDispatcher {
         MotionEvent eventToEnqueue = MotionEvent.obtainNoHistory(event);
         DispatchEvent d = obtainDispatchEventLocked(eventToEnqueue, EVENT_TYPE_HIT_TEST, 0,
                 mPostLastWebKitXOffset, mPostLastWebKitYOffset, mPostLastWebKitScale);
-        enqueueEventLocked(d);
+        if (!shouldSkipWebKit(d)) {
+            enqueueWebKitEventLocked(d);
+        } else {
+            enqueueUiEventLocked(d);
+        }
     }
 
     private void checkForSlopLocked(MotionEvent event) {
@@ -549,7 +562,13 @@ final class WebViewInputDispatcher {
             hideTapCandidateLocked();
         } else if (action == MotionEvent.ACTION_DOWN) {
             checkForDoubleTapOnDownLocked(event);
-            scheduleLongPressLocked();
+
+            // scheduleLongPressLocked()
+            unscheduleLongPressLocked();
+            mPostLongPressScheduled = true;
+            mUiHandler.sendEmptyMessageDelayed(UiHandler.MSG_LONG_PRESS,
+                    LONG_PRESS_TIMEOUT);
+
             mIsTapCandidate = true;
             mInitialDownX = event.getX();
             mInitialDownY = event.getY();
@@ -705,7 +724,13 @@ final class WebViewInputDispatcher {
                 && isMoveEventLocked(d)
                 && isMoveEventLocked(d.mNext)) {
             DispatchEvent next = d.mNext;
-            skipWebKitEventLocked(d);
+            d.mNext = null;
+            if ((d.mFlags & FLAG_PRIVATE) != 0) {
+                recycleDispatchEventLocked(d);
+            } else {
+                d.mFlags |= FLAG_WEBKIT_TIMEOUT;
+                enqueueUiEventUnbatchedLocked(d);
+            }
             d = next;
         }
         mWebKitDispatchEventQueue.mHead = d;
@@ -747,7 +772,13 @@ final class WebViewInputDispatcher {
             // Enqueue all non-private events for handling by the UI thread.
             while (d != null) {
                 DispatchEvent next = d.mNext;
-                skipWebKitEventLocked(d);
+                d.mNext = null;
+                if ((d.mFlags & FLAG_PRIVATE) != 0) {
+                    recycleDispatchEventLocked(d);
+                } else {
+                    d.mFlags |= FLAG_WEBKIT_TIMEOUT;
+                    enqueueUiEventUnbatchedLocked(d);
+                }
                 d = next;
             }
 
@@ -755,16 +786,6 @@ final class WebViewInputDispatcher {
             // This also prevents us from sending web kit any more touches until the
             // next gesture begins.  (As required to ensure touch event stream consistency.)
             enqueueWebKitCancelTouchEventIfNeededLocked();
-        }
-    }
-
-    private void skipWebKitEventLocked(DispatchEvent d) {
-        d.mNext = null;
-        if ((d.mFlags & FLAG_PRIVATE) != 0) {
-            recycleDispatchEventLocked(d);
-        } else {
-            d.mFlags |= FLAG_WEBKIT_TIMEOUT;
-            enqueueUiEventUnbatchedLocked(d);
         }
     }
 
@@ -839,14 +860,6 @@ final class WebViewInputDispatcher {
                     + ", eventType=" + eventType + ", flags=" + flags);
         }
         mUiCallbacks.dispatchUiEvent(event, eventType, flags);
-    }
-
-    private void enqueueEventLocked(DispatchEvent d) {
-        if (!shouldSkipWebKit(d)) {
-            enqueueWebKitEventLocked(d);
-        } else {
-            enqueueUiEventLocked(d);
-        }
     }
 
     private boolean shouldSkipWebKit(DispatchEvent d) {

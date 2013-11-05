@@ -1243,7 +1243,57 @@ public final class WebViewClassic implements WebViewProvider, WebViewProvider.Sc
          * such as the mZoomManager.
          */
         init();
-        setupPackageListener(context);
+
+        /*
+         * we must synchronize the instance check and the creation of the
+         * receiver to ensure that only ONE receiver exists for all WebView
+         * instances.
+         */
+        synchronized (WebViewClassic.class) {
+
+            // if the receiver already exists then we do not need to register it
+            // again
+            if (sPackageInstallationReceiverAdded) {
+                return;
+            }
+
+            IntentFilter filter = new IntentFilter(Intent.ACTION_PACKAGE_ADDED);
+            filter.addAction(Intent.ACTION_PACKAGE_REMOVED);
+            filter.addDataScheme("package");
+            BroadcastReceiver packageListener = new PackageListener();
+            context.getApplicationContext().registerReceiver(packageListener, filter);
+            sPackageInstallationReceiverAdded = true;
+        }
+
+        // check if any of the monitored apps are already installed
+        AsyncTask<Void, Void, Set<String>> task = new AsyncTask<Void, Void, Set<String>>() {
+
+            @Override
+            protected Set<String> doInBackground(Void... unused) {
+                Set<String> installedPackages = new HashSet<String>();
+                PackageManager pm = mContext.getPackageManager();
+                for (String name : sGoogleApps) {
+                    try {
+                        pm.getPackageInfo(name,
+                                PackageManager.GET_ACTIVITIES | PackageManager.GET_SERVICES);
+                        installedPackages.add(name);
+                    } catch (PackageManager.NameNotFoundException e) {
+                        // package not found
+                    }
+                }
+                return installedPackages;
+            }
+
+            // Executes on the UI thread
+            @Override
+            protected void onPostExecute(Set<String> installedPackages) {
+                if (mWebViewCore != null) {
+                    mWebViewCore.sendMessage(EventHub.ADD_PACKAGE_NAMES, installedPackages);
+                }
+            }
+        };
+        task.execute();
+
         setupProxyListener(context);
         setupTrustStorageListener(context);
         updateMultiTouchSupport(context);
@@ -1256,14 +1306,6 @@ public final class WebViewClassic implements WebViewProvider, WebViewProvider.Sc
         mEditTextScroller = new Scroller(context);
 
         // Calculate channel distance
-        calculateChannelDistance(context);
-    }
-
-    /**
-     * Calculate sChannelDistance based on the screen information.
-     * @param context A Context object used to access application assets.
-     */
-    private void calculateChannelDistance(Context context) {
         // The channel distance is adjusted for density and screen size
         final DisplayMetrics metrics = context.getResources().getDisplayMetrics();
         final double screenSize = Math.hypot((double)(metrics.widthPixels/metrics.densityDpi),
@@ -1618,59 +1660,6 @@ public final class WebViewClassic implements WebViewProvider, WebViewProvider.Sc
                 pm.refreshPlugins(Intent.ACTION_PACKAGE_ADDED.equals(action));
             }
         }
-    }
-
-    private void setupPackageListener(Context context) {
-
-        /*
-         * we must synchronize the instance check and the creation of the
-         * receiver to ensure that only ONE receiver exists for all WebView
-         * instances.
-         */
-        synchronized (WebViewClassic.class) {
-
-            // if the receiver already exists then we do not need to register it
-            // again
-            if (sPackageInstallationReceiverAdded) {
-                return;
-            }
-
-            IntentFilter filter = new IntentFilter(Intent.ACTION_PACKAGE_ADDED);
-            filter.addAction(Intent.ACTION_PACKAGE_REMOVED);
-            filter.addDataScheme("package");
-            BroadcastReceiver packageListener = new PackageListener();
-            context.getApplicationContext().registerReceiver(packageListener, filter);
-            sPackageInstallationReceiverAdded = true;
-        }
-
-        // check if any of the monitored apps are already installed
-        AsyncTask<Void, Void, Set<String>> task = new AsyncTask<Void, Void, Set<String>>() {
-
-            @Override
-            protected Set<String> doInBackground(Void... unused) {
-                Set<String> installedPackages = new HashSet<String>();
-                PackageManager pm = mContext.getPackageManager();
-                for (String name : sGoogleApps) {
-                    try {
-                        pm.getPackageInfo(name,
-                                PackageManager.GET_ACTIVITIES | PackageManager.GET_SERVICES);
-                        installedPackages.add(name);
-                    } catch (PackageManager.NameNotFoundException e) {
-                        // package not found
-                    }
-                }
-                return installedPackages;
-            }
-
-            // Executes on the UI thread
-            @Override
-            protected void onPostExecute(Set<String> installedPackages) {
-                if (mWebViewCore != null) {
-                    mWebViewCore.sendMessage(EventHub.ADD_PACKAGE_NAMES, installedPackages);
-                }
-            }
-        };
-        task.execute();
     }
 
     void updateMultiTouchSupport(Context context) {
@@ -2363,23 +2352,6 @@ public final class WebViewClassic implements WebViewProvider, WebViewProvider.Sc
         return true;
     }
 
-    private void restoreHistoryPictureFields(Picture p, Bundle b) {
-        int sx = b.getInt("scrollX", 0);
-        int sy = b.getInt("scrollY", 0);
-
-        mDrawHistory = true;
-        mHistoryPicture = p;
-
-        setScrollXRaw(sx);
-        setScrollYRaw(sy);
-        mZoomManager.restoreZoomState(b);
-        final float scale = mZoomManager.getScale();
-        mHistoryWidth = Math.round(p.getWidth() * scale);
-        mHistoryHeight = Math.round(p.getHeight() * scale);
-
-        invalidate();
-    }
-
     /**
      * See {@link WebView#restorePicture(Bundle, File)};
      */
@@ -2406,7 +2378,20 @@ public final class WebViewClassic implements WebViewProvider, WebViewProvider.Sc
                             mPrivateHandler.post(new Runnable() {
                                 @Override
                                 public void run() {
-                                    restoreHistoryPictureFields(p, copy);
+                                    int sx = copy.getInt("scrollX", 0);
+                                    int sy = copy.getInt("scrollY", 0);
+
+                                    mDrawHistory = true;
+                                    mHistoryPicture = p;
+
+                                    setScrollXRaw(sx);
+                                    setScrollYRaw(sy);
+                                    mZoomManager.restoreZoomState(copy);
+                                    final float scale = mZoomManager.getScale();
+                                    mHistoryWidth = Math.round(p.getWidth() * scale);
+                                    mHistoryHeight = Math.round(p.getHeight() * scale);
+
+                                    invalidate();
                                 }
                             });
                         }

@@ -127,17 +127,6 @@ final class WebViewDatabaseClassic extends WebViewDatabase {
             return;
         }
 
-        initDatabase(context);
-        // Before using the Chromium HTTP stack, we stored the WebKit cache in
-        // our own DB. Clean up the DB file if it's still around.
-        context.deleteDatabase(CACHE_DATABASE_FILE);
-
-        // Thread done, notify.
-        mInitialized = true;
-        notify();
-    }
-
-    private void initDatabase(Context context) {
         try {
             sDatabase = context.openOrCreateDatabase(DATABASE_FILE, 0, null);
         } catch (SQLiteException e) {
@@ -165,6 +154,14 @@ final class WebViewDatabaseClassic extends WebViewDatabase {
                 sDatabase.endTransaction();
             }
         }
+
+        // Before using the Chromium HTTP stack, we stored the WebKit cache in
+        // our own DB. Clean up the DB file if it's still around.
+        context.deleteDatabase(CACHE_DATABASE_FILE);
+
+        // Thread done, notify.
+        mInitialized = true;
+        notify();
     }
 
     private static void upgradeDatabase() {
